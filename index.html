@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Planner - Liquid Glass Edition</title>
+    <style>
+        :root {
+            --bg-top: #26282b;
+            --bg-bottom: #0d0e10;
+            --text: #f3f5fb;
+            --muted: #a9b2cb;
+            --accent: #8fb0ff;
+            --good: #6ee7b7;
+            --warn: #ff8fa3;
+            --glass-bg: rgba(22, 23, 26, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --blur: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-top), var(--bg-bottom));
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 640px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* Top Bar / Days */
+        .top-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .days-container {
+            display: flex;
+            flex: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .day-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            position: relative;
+        }
+
+        .day-btn:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .day-btn.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .day-btn.today::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .icon-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        /* Banner Card */
+        .banner-card {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .banner-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--good));
+            border-radius: 4px;
+            transition: width 0.4s ease;
+            box-shadow: 0 0 10px var(--good);
+        }
+
+        .banner-sub {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Schedule List Box */
+        .list-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .list-box::-webkit-scrollbar {
+            width: 4px;
+        }
+        .list-box::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .task-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .task-row:hover {
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .task-row.selected {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .task-kind {
+            width: 4px;
+            height: 22px;
+            border-radius: 2px;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .task-row.done .task-checkbox {
+            background: var(--good);
+            border-color: var(--good);
+            color: #0b1d17;
+            font-weight: bold;
+        }
+
+        .task-time {
+            font-size: 12px;
+            color: var(--muted);
+            width: 75px;
+            line-height: 1.2;
+        }
+
+        .task-row.done .task-time,
+        .task-row.done .task-label {
+            text-decoration: line-through;
+            color: var(--muted);
+            opacity: 0.6;
+        }
+
+        .task-label {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Details & Notes Box */
+        .details-box {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 150px;
+        }
+
+        .details-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .details-desc {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .notes-area {
+            width: 100%;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text);
+            padding: 8px 12px;
+            font-size: 13px;
+            resize: none;
+            outline: none;
+        }
+
+        .notes-area:focus {
+            border-color: var(--accent);
+        }
+
+        .action-row {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #0d0e10;
+            border: none;
+        }
+        .btn-primary:hover {
+            background: #a8c4ff;
+        }
+
+        .btn-danger {
+            background: rgba(255, 143, 163, 0.2);
+            color: var(--warn);
+            border-color: rgba(255, 143, 163, 0.4);
+        }
+
+        /* Modal Overlays */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 100;
+        }
+        .modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: #1a1b1e;
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 420px;
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-content input {
+            width: 100%;
+            background: #27282c;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+        }
+        .modal-content input:focus {
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <div class="top-bar">
+            <div class="days-container" id="daysContainer"></div>
+            <button class="icon-btn" onclick="openQuickAdd()" title="Quick Add">+</button>
+            <button class="icon-btn" onclick="openSettings()" title="Settings">⚙</button>
+        </div>
+
+        <!-- Banner / Status -->
+        <div class="banner-card" id="bannerCard">
+            <div class="banner-title" id="bannerTitle">Loading schedule...</div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+            <div class="banner-sub">
+                <span id="bannerStats">0/0 done</span>
+                <span id="timerDisplay" style="color: var(--accent); font-weight: bold;"></span>
+            </div>
+        </div>
+
+        <!-- Schedule List -->
+        <div class="list-box" id="listBox"></div>
+
+        <!-- Details / Editor Panel -->
+        <div class="details-box" id="detailsBox">
+            <div class="details-title" id="detTitle">Select a block</div>
+            <div class="details-desc" id="detDesc">Choose any task above to view details, take notes, or launch a focus timer.</div>
+            <textarea class="notes-area" id="notesArea" placeholder="Add personal notes for this block..." oninput="saveNotes()"></textarea>
+            <div class="action-row" id="actionRow" style="display: none;">
+                <button class="btn btn-primary" id="btnToggleDone" onclick="toggleSelectedDone()">Mark Done</button>
+                <button class="btn" id="btnTimer" onclick="startTimerForSelected()">Start Timer</button>
+                <button class="btn btn-danger" id="btnDelete" onclick="deleteSelected()" style="display:none;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Modal -->
+    <div class="modal" id="quickAddModal">
+        <div class="modal-content">
+            <h3>Quick Add Task</h3>
+            <input type="text" id="quickInput" placeholder="e.g. Read chapter 4 for 30m" oninput="previewQuick()">
+            <div id="quickPreview" style="font-size: 12px; color: var(--muted);">Type naturally...</div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+                <button class="btn" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitQuickAdd()">Add Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <h3>Settings</h3>
+            <label style="font-size: 13px; color: var(--muted);">Your Name:</label>
+            <input type="text" id="setName" placeholder="Ryan">
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
+                <button class="btn" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        const FULL_DAYS = {"Mon": "Monday", "Tue": "Tuesday", "Wed": "Wednesday", "Thu": "Thursday", "Fri": "Friday", "Sat": "Saturday", "Sun": "Sunday"};
+        const KIND_COLORS = {"class": "#7aa2ff", "work": "#34d3b3", "break": "#ff9ec2", "meal": "#ffc86e", "fun": "#ba8cff"};
+
+        const SCHEDULE = {
+            "Mon": [
+                {start: "15:30", end: "16:15", label: "BC math practice", detail: "Pick one topic from grade 11 and do 8-10 problems.", kind: "work"},
+                {start: "16:30", end: "17:30", label: "Guitar", detail: "Warm up for 10 minutes, practice one piece slowly.", kind: "work"},
+                {start: "18:00", end: "19:00", label: "Dinner", detail: "Family dinner. Take a proper break.", kind: "meal"},
+                {start: "19:15", end: "20:45", label: "Physics class", detail: "Write down homework before you leave.", kind: "class"}
+            ],
+            "Tue": [
+                {start: "15:30", end: "16:30", label: "Physics homework", detail: "Homework from Monday's class.", kind: "work"},
+                {start: "16:30", end: "17:15", label: "BC math practice", detail: "Pick one topic and practice.", kind: "work"},
+                {start: "18:00", end: "19:00", label: "Dinner", detail: "Family dinner.", kind: "meal"}
+            ],
+            "Wed": [{start: "15:30", end: "16:30", label: "School homework", detail: "Catch up or get ahead.", kind: "work"}],
+            "Thu": [{start: "19:00", end: "21:00", label: "Chemistry class", detail: "Lab and lecture.", kind: "class"}],
+            "Fri": [{start: "15:10", end: "17:25", label: "Math class", kind: "class"}],
+            "Sat": [{start: "09:45", end: "11:15", label: "Chinese class", kind: "class"}],
+            "Sun": [{start: "10:00", end: "11:00", label: "Leftover homework", kind: "work"}]
+        };
+
+        let state = JSON.parse(localStorage.getItem('glass_planner_state')) || {
+            done: {}, notes: {}, custom: {}, settings: {name: ""}
+        };
+
+        let currentDay = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1];
+        let selectedId = null;
+        let activeTimer = null;
+        let timerSecondsLeft = 0;
+        let timerTitle = "";
+
+        function saveState() {
+            localStorage.setItem('glass_planner_state', JSON.stringify(state));
+        }
+
+        function getBlocks(day) {
+            let base = (SCHEDULE[day] || []).map((b, idx) => ({...b, id: `${day}-base-${idx}`, custom: false}));
+            let custom = (state.custom[day] || []).map(b => ({...b, custom: true}));
+            return [...base, ...custom].sort((a,b) => a.start.localeCompare(b.start));
+        }
+
+        function renderDays() {
+            let container = document.getElementById('daysContainer');
+            let todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+            let todayStr = DAYS[todayIdx];
+
+            container.innerHTML = DAYS.map(d => `
+                <button class="day-btn ${d === currentDay ? 'active' : ''} ${d === todayStr ? 'today' : ''}" onclick="switchDay('${d}')">
+                    ${d}
+                </button>
+            `).join('');
+        }
+
+        function switchDay(d) {
+            currentDay = d;
+            selectedId = null;
+            render();
+        }
+
+        function renderBanner(blocks) {
+            let doneCount = blocks.filter(b => state.done[b.id]).length;
+            let total = blocks.length;
+            let percent = total > 0 ? (doneCount / total) * 100 : 0;
+
+            document.getElementById('bannerTitle').innerText = `${FULL_DAYS[currentDay]} Schedule`;
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            document.getElementById('bannerStats').innerText = `${doneCount}/${total} done on ${currentDay}`;
+        }
+
+        function renderList(blocks) {
+            let listBox = document.getElementById('listBox');
+            if (blocks.length === 0) {
+                listBox.innerHTML = `<div style="padding: 12px; color: var(--muted); font-size: 13px;">Nothing scheduled for ${currentDay}.</div>`;
+                return;
+            }
+
+            listBox.innerHTML = blocks.map(b => {
+                let isDone = !!state.done[b.id];
+                let isSel = selectedId === b.id;
+                let kindColor = KIND_COLORS[b.kind] || KIND_COLORS['work'];
+
+                return `
+                    <div class="task-row ${isDone ? 'done' : ''} ${isSel ? 'selected' : ''}" onclick="selectBlock('${b.id}')">
+                        <div class="task-kind" style="background: ${kindColor};"></div>
+                        <div class="task-checkbox" onclick="event.stopPropagation(); toggleDone('${b.id}')">${isDone ? '✓' : ''}</div>
+                        <div class="task-time">${b.start}<br>${b.end}</div>
+                        <div class="task-label">${b.label}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderDetails() {
+            let titleEl = document.getElementById('detTitle');
+            let descEl = document.getElementById('detDesc');
+            let notesEl = document.getElementById('notesArea');
+            let actionRow = document.getElementById('actionRow');
+            let btnToggle = document.getElementById('btnToggleDone');
+            let btnDelete = document.getElementById('btnDelete');
+
+            if (!selectedId) {
+                titleEl.innerText = "Select a block";
+                descEl.innerText = "Choose any task above to view details, take notes, or launch a focus timer.";
+                notesEl.style.display = 'none';
+                actionRow.style.display = 'none';
+                return;
+            }
+
+            let blocks = getBlocks(currentDay);
+            let block = blocks.find(b => b.id === selectedId);
+            if (!block) return;
+
+            titleEl.innerText = block.label;
+            descEl.innerText = block.detail || "No additional description provided.";
+            notesEl.style.display = 'block';
+            notesEl.value = state.notes[block.id] || '';
+            actionRow.style.display = 'flex';
+
+            let isDone = !!state.done[block.id];
+            btnToggle.innerText = isDone ? "Mark Not Done" : "Mark Done";
+            btnDelete.style.display = block.custom ? 'inline-block' : 'none';
+        }
+
+        function selectBlock(id) {
+            selectedId = id;
+            render();
+        }
+
+        function toggleDone(id) {
+            state.done[id] = !state.done[id];
+            saveState();
+            render();
+        }
+
+        function toggleSelectedDone() {
+            if (selectedId) toggleDone(selectedId);
+        }
+
+        function saveNotes() {
+            if (!selectedId) return;
+            let val = document.getElementById('notesArea').value;
+            if (val.trim()) {
+                state.notes[selectedId] = val;
+            } else {
+                delete state.notes[selectedId];
+            }
+            saveState();
+        }
+
+        function deleteSelected() {
+            if (!selectedId) return;
+            let blocks = getBlocks(currentDay);
+            let block = blocks.find(b => b.id === selectedId);
+            if (block && block.custom) {
+                state.custom[currentDay] = state.custom[currentDay].filter(b => b.id !== block.id);
+                delete state.done[block.id];
+                delete state.notes[block.id];
+                saveState();
+                selectedId = null;
+                render();
+            }
+        }
+
+        function startTimerForSelected() {
+            let blocks = getBlocks(currentDay);
+            let block = blocks.find(b => b.id === selectedId);
+            if (!block) return;
+
+            let [sh, sm] = block.start.split(':').map(Number);
+            let [eh, em] = block.end.split(':').map(Number);
+            let mins = (eh * 60 + em) - (sh * 60 + sm);
+            if (mins <= 0) mins = 30;
+
+            timerSecondsLeft = mins * 60;
+            timerTitle = block.label;
+            
+            if (activeTimer) clearInterval(activeTimer);
+            activeTimer = setInterval(() => {
+                if (timerSecondsLeft > 0) {
+                    timerSecondsLeft--;
+                    updateTimerDisplay();
+                } else {
+                    clearInterval(activeTimer);
+                    alert(`Timer finished for ${timerTitle}!`);
+                    timerTitle = "";
+                    updateTimerDisplay();
+                }
+            }, 1000);
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            let disp = document.getElementById('timerDisplay');
+            if (!timerTitle) {
+                disp.innerText = "";
+                return;
+            }
+            let m = Math.floor(timerSecondsLeft / 60);
+            let s = timerSecondsLeft % 60;
+            disp.innerText = `${timerTitle} - ${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
+
+        function openQuickAdd() {
+            document.getElementById('quickAddModal').classList.add('open');
+            document.getElementById('quickInput').focus();
+        }
+
+        function openSettings() {
+            document.getElementById('setName').value = state.settings.name || '';
+            document.getElementById('settingsModal').classList.add('open');
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+        }
+
+        function previewQuick() {
+            let val = document.getElementById('quickInput').value;
+            document.getElementById('quickPreview').innerText = val ? `Adding task to ${currentDay}...` : "Type naturally...";
+        }
+
+        function submitQuickAdd() {
+            let val = document.getElementById('quickInput').value.trim();
+            if (!val) return;
+
+            let newBlock = {
+                id: `custom-${Date.now()}`,
+                start: "17:00",
+                end: "18:00",
+                label: val,
+                detail: "Added via Quick Add",
+                kind: "work"
+            };
+
+            if (!state.custom[currentDay]) state.custom[currentDay] = [];
+            state.custom[currentDay].push(newBlock);
+            saveState();
+            closeModals();
+            document.getElementById('quickInput').value = "";
+            render();
+        }
+
+        function saveSettings() {
+            state.settings.name = document.getElementById('setName').value.trim();
+            saveState();
+            closeModals();
+        }
+
+        function render() {
+            renderDays();
+            let blocks = getBlocks(currentDay);
+            renderBanner(blocks);
+            renderList(blocks);
+            renderDetails();
+        }
+
+        render();
+    </script>
+</body>
+</html>
